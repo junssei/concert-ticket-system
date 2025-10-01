@@ -123,7 +123,8 @@ export default function Home() {
                   {isAdmin && (
                     <Link className='btn' to='/admin'>Admin</Link>
                   )}
-                  <button className='btn' onClick={logout}>Logout</button>
+                  <Link className='btn' to='/me/reservations'>My Tickets</Link>
+                  <button className='btn danger' onClick={logout}>Logout</button>
                 </>
               ) : (
                 <>

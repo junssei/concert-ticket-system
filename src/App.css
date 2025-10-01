@@ -293,6 +293,14 @@
   color: #0f172a;
   text-decoration: none;
   cursor: pointer;
+  font-weight: 600;
+  transition: background 120ms ease, transform 80ms ease, box-shadow 160ms ease, filter 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .btn.primary {
@@ -300,6 +308,19 @@
   color: #fff;
   border-color: transparent;
 }
+
+.btn.danger {
+  background: #ef4444; /* red-500 */
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Hover/active states for consistent header buttons */
+.btn:hover { background: #f3f4f6; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn.primary:hover { filter: brightness(1.05); box-shadow: 0 6px 18px rgba(79,70,229,0.25); }
+.btn.danger:hover { filter: brightness(1.05); box-shadow: 0 6px 18px rgba(239,68,68,0.25); }
+.btn:focus-visible { outline: 2px solid #c7d2fe; outline-offset: 2px; }
 
 .empty {
   color: #6b7280;
@@ -384,6 +405,10 @@
 .App.dark .cardMeta { color: #9fb4d9; }
 .App.dark .btn { background: transparent; border-color: #163041; color: #e6eef8; }
 .App.dark .btn.primary { background: #2563eb; }
+.App.dark .btn:hover { background: rgba(255,255,255,0.06); border-color: #2b3a4c; }
+.App.dark .btn.primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(37,99,235,0.25); }
+.App.dark .btn.danger { background: #dc2626; color: #fff; border-color: transparent; }
+.App.dark .btn.danger:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(220,38,38,0.25); }
 .App.dark .empty { color: #9fb4d9; }
 
 @media (max-width: 520px) {

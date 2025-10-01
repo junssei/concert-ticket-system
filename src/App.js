@@ -10,6 +10,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import EventDetails from './pages/EventDetails';
+import MyReservations from './pages/MyReservations';
 
 export default function App() {
   return (
@@ -39,6 +40,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Checkout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/me/reservations"
+        element={
+          <ProtectedRoute>
+            <MyReservations />
           </ProtectedRoute>
         }
       />
