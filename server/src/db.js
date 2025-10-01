@@ -24,12 +24,19 @@ export async function getPool() {
   if (!cfg) return null; // not configured yet
 
   if (cfg.url) {
+    // Parse mysql://USER:PASSWORD@HOST:PORT/DBNAME
+    const u = new URL(cfg.url);
+    const isInternal = u.hostname.includes('railway.internal');
     pool = mysql.createPool({
-      uri: cfg.url,
+      host: u.hostname,
+      port: Number(u.port || 3306),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, ''),
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      // ssl: { rejectUnauthorized: true }, // enable if your provider requires SSL
+      ssl: isInternal ? undefined : { rejectUnauthorized: true },
     });
   } else {
     pool = mysql.createPool({
