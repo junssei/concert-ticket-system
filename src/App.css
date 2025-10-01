@@ -98,6 +98,7 @@
 .input[data-theme='dark'] {
   caret-color: #e6eef8;
 }
+
 .input[data-theme='light'] {
   caret-color: #0f172a;
 }

@@ -11,6 +11,7 @@ export default function Checkout() {
   const [error, setError] = useState(null);
   const buttonsRef = useRef(null);
   const { user } = useAuth();
+  const email = user?.email || null;
 
   useEffect(() => {
     const raw = localStorage.getItem('pendingCheckout');
@@ -46,7 +47,6 @@ export default function Checkout() {
           const details = await actions.order.capture();
           const paymentId = details.id;
           // Try to persist via backend API
-          let apiOk = false;
           try {
             const payResp = await fetch(`${API_BASE_URL}/api/payments`, {
               method: 'POST',
@@ -68,7 +68,7 @@ export default function Checkout() {
               body: JSON.stringify({
                 eventId: event?.id,
                 eventName: event?.name,
-                userEmail: user?.email || null,
+                userEmail: email,
                 seats,
                 pricePerSeat,
                 total,
@@ -77,7 +77,6 @@ export default function Checkout() {
               })
             });
             if (!resvResp.ok) throw new Error('Reservation API failed');
-            apiOk = true;
           } catch (_) {
             // Fallback to localStorage
             const payments = JSON.parse(localStorage.getItem('payments') || '[]');
@@ -108,32 +107,15 @@ export default function Checkout() {
       setError('Unable to render PayPal Buttons');
     }
     return () => { try { buttons.close(); } catch (_) {} };
-  }, [sdkReady, total, event, seats, pricePerSeat, navigate]);
+  }, [sdkReady, total, event, seats, pricePerSeat, navigate, email]);
 
-  function simulateSuccess() {
-    const resv = {
-      id: `R-${Date.now()}`,
-      event,
-      seats,
-      pricePerSeat,
-      total,
-      method: 'paypal-sandbox',
-      status: 'pending_approval',
-      createdAt: new Date().toISOString(),
-    };
-    const list = JSON.parse(localStorage.getItem('reservations') || '[]');
-    list.unshift(resv);
-    localStorage.setItem('reservations', JSON.stringify(list));
-    localStorage.removeItem('pendingCheckout');
-    alert('Payment successful. Your reservation is pending admin approval.');
-    navigate('/', { replace: true });
-  }
+  // removed simulateSuccess mock to satisfy CI unused vars
 
   function cancel() {
     navigate(-1);
   }
 
-  const sandboxConfigured = PAYPAL_CLIENT_ID && PAYPAL_CLIENT_ID !== 'YOUR_PAYPAL_SANDBOX_CLIENT_ID';
+  // sandboxConfigured not needed; PayPal SDK is loaded dynamically using the client ID
 
   if (!order) {
     return (

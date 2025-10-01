@@ -5,12 +5,11 @@ import '../App.css';
 import logo from '../assets/logo.png';
 
 export default function Home() {
-  const [event, setEvent] = useState('')
   const [query, setQuery] = useState('');
   const [events, setEvents] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(12);
+  const size = 12;
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(true);
@@ -31,7 +30,6 @@ export default function Home() {
     // Ticketmaster wraps events under _embedded.events
     const items = data?._embedded?.events || [];
     const pageInfo = data?.page || {};
-    console.log('Fetched events', items, pageInfo);
     setEvents(items);
     setPage(pageInfo.number ?? p);
     setTotalPages(pageInfo.totalPages ?? 0);
@@ -61,9 +59,9 @@ export default function Home() {
   function onSubmit(e) {
     e.preventDefault();
     fetchEvents(0);
-    console.log('Search submitted:', query);
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     fetchEvents(0);
     fetchUpcoming();
@@ -85,7 +83,6 @@ export default function Home() {
 
   // Reservation flow with auth gate
   function startReservation(ev) {
-    setEvent(ev);
     const id = ev?.id || 'unknown';
     const dest = `/reserve/${id}/seat`;
     if (!isAuthenticated) {
@@ -102,12 +99,7 @@ export default function Home() {
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { /* ignore */ }
   }
 
-  const scrollByHero = (dir = 1) => {
-    const el = heroRef.current;
-    if (!el) return;
-    const amount = Math.round(el.clientWidth * 0.9);
-    el.scrollBy({ left: dir * amount, behavior: 'smooth' });
-  }
+  // removed unused scrollByHero to satisfy ESLint
 
   return (
     <div className={dark ? 'App dark' : 'App'}>
