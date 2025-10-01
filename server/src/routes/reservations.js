@@ -18,11 +18,25 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const { eventId, eventName, userEmail, seats, pricePerSeat, total, status, paymentId } = req.body;
-    const result = await query(
-      'INSERT INTO reservations(event_id, event_name, user_email, seats_json, price_per_seat, total, status, payment_id, created_at) VALUES(?,?,?,?,?,?,?,?,NOW())',
-      [eventId, eventName, userEmail, JSON.stringify(seats || []), pricePerSeat, total, status || 'pending_approval', paymentId || null]
-    );
-    res.status(201).json({ id: result.insertId });
+
+    // Basic validation
+    if (!eventName || total == null) {
+      return res.status(400).json({ error: 'eventName and total are required' });
+    }
+
+    const seatsJson = JSON.stringify(seats || []);
+    try {
+      const result = await query(
+        'INSERT INTO reservations(event_id, event_name, user_email, seats_json, price_per_seat, total, status, payment_id, created_at) VALUES(?,?,?,?,?,?,?,?,NOW())',
+        [eventId || null, eventName, userEmail || null, seatsJson, pricePerSeat || null, total, status || 'pending_approval', paymentId || null]
+      );
+      return res.status(201).json({ id: result.insertId });
+    } catch (sqlErr) {
+      console.error('[reservations] insert error:', sqlErr?.message, {
+        eventId, eventName, userEmail, seatsCount: (seats || []).length, pricePerSeat, total, status, paymentId
+      });
+      return next(sqlErr);
+    }
   } catch (e) {
     next(e);
   }

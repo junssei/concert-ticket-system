@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                         <td style={{ padding: '8px 6px' }}>{p.provider}</td>
                         <td style={{ padding: '8px 6px' }}>${p.amount}</td>
                         <td style={{ padding: '8px 6px' }}>{p.status}</td>
-                        <td style={{ padding: '8px 6px' }}>{new Date(p.createdAt).toLocaleString()}</td>
+                        <td style={{ padding: '8px 6px' }}>{new Date(p.created_at).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -76,15 +76,15 @@ export default function Checkout() {
                 paymentId: paymentId,
               })
             });
-            if (!resvResp.ok) throw new Error('Reservation API failed');
+            if (!resvResp.ok) {
+              let msg = 'Reservation API failed';
+              try { const body = await resvResp.json(); if (body?.error) msg = body.error; } catch (_) {}
+              throw new Error(msg);
+            }
           } catch (_) {
-            // Fallback to localStorage
-            const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-            payments.unshift({ id: paymentId, provider: 'paypal', status: details.status, amount: total, currency: 'USD', raw: details, createdAt: new Date().toISOString() });
-            localStorage.setItem('payments', JSON.stringify(payments));
-            const reservations = JSON.parse(localStorage.getItem('reservations') || '[]');
-            reservations.unshift({ id: `R-${Date.now()}`, event, seats, pricePerSeat, total, method: 'paypal', status: 'pending_approval', createdAt: new Date().toISOString(), paymentId });
-            localStorage.setItem('reservations', JSON.stringify(reservations));
+            // Do not fallback for reservations; surface error instead
+            setError('Failed to create reservation. Please try again.');
+            return;
           }
           localStorage.removeItem('pendingCheckout');
           alert('Payment successful. Your reservation is pending admin approval.');
