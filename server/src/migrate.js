@@ -24,6 +24,13 @@ export async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  // Ensure event_name exists for older tables
+  try {
+    await query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS event_name VARCHAR(512)`);
+  } catch (_) {
+    // ignore if not supported or already exists
+  }
+
   await query(`
     CREATE TABLE IF NOT EXISTS payments (
       id INT AUTO_INCREMENT PRIMARY KEY,
