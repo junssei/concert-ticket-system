@@ -436,6 +436,7 @@
   padding-left: 0;
   padding-right: 0;
   margin: 0 auto;
+  position: relative;
 }
 
 .container {
@@ -542,6 +543,30 @@
 }
 
 .headerActions { display: flex; align-items: center; gap: 12px; }
+
+/* Header navigation + mobile menu */
+.menuBtn { display: none; }
+.headerNav { display: inline-flex; gap: 8px; align-items: center; }
+
+@media (max-width: 880px) {
+  .menuBtn { display: inline-flex; }
+  .headerNav {
+    position: absolute;
+    right: 12px;
+    top: 56px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 30;
+    box-shadow: 0 12px 28px rgba(15,23,42,0.12);
+  }
+  .headerNav.open { display: flex; }
+  .App.dark .headerNav { background: #071028; border-color: #163041; box-shadow: 0 12px 28px rgba(0,0,0,0.5); }
+}
 
 /* Ensure footer has breathing space from main content when using Layout */
 .mainContent { padding-bottom: 36px; }

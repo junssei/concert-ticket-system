@@ -13,6 +13,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const inputRef = useRef(null);
   const heroRef = useRef(null);
   const navigate = useNavigate();
@@ -116,20 +117,28 @@ export default function Home() {
               <input type='checkbox' checked={dark} onChange={toggleDark} />
               <span>Dark</span>
             </label>
-            <nav style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            <button
+              className='menuBtn btn'
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <ion-icon name={menuOpen ? 'close' : 'menu'}></ion-icon>
+              <span className='sr-only'>{menuOpen ? 'Close menu' : 'Open menu'}</span>
+            </button>
+            <nav className={`headerNav ${menuOpen ? 'open' : ''}`} aria-label='Primary'>
               {isAuthenticated ? (
                 <>
                   <span style={{ color: '#6b7280', fontSize: 14 }}>{user?.email}</span>
                   {isAdmin && (
-                    <Link className='btn' to='/admin'>Admin</Link>
+                    <Link className='btn' to='/admin' onClick={() => setMenuOpen(false)}>Admin</Link>
                   )}
-                  <Link className='btn' to='/me/reservations'>My Tickets</Link>
-                  <button className='btn danger' onClick={logout}>Logout</button>
+                  <Link className='btn' to='/me/reservations' onClick={() => setMenuOpen(false)}>My Tickets</Link>
+                  <button className='btn danger' onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
                 </>
               ) : (
                 <>
-                  <Link className='btn' to='/login'>Login</Link>
-                  <Link className='btn primary' to='/register'>Register</Link>
+                  <Link className='btn' to='/login' onClick={() => setMenuOpen(false)}>Login</Link>
+                  <Link className='btn primary' to='/register' onClick={() => setMenuOpen(false)}>Register</Link>
                 </>
               )}
             </nav>
