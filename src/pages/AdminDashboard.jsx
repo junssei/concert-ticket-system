@@ -10,6 +10,22 @@ export default function AdminDashboard() {
   const [reservations, setReservations] = React.useState([]);
   const [payments, setPayments] = React.useState([]);
 
+  function parseSeats(val) {
+    try {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return JSON.parse(val);
+      return [];
+    } catch { return []; }
+  }
+
+  function getPayerEmail(p) {
+    try {
+      const raw = p?.raw_json;
+      const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return obj?.payer?.email_address || '-';
+    } catch { return '-'; }
+  }
+
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -84,13 +100,13 @@ export default function AdminDashboard() {
           <section>
             <h3 style={{ marginTop: 0 }}>Reservations</h3>
             {reservations.length === 0 ? (
-              <EmptyTable headers={["Reservation ID", "Event", "Seats", "Total", "Status", "Actions"]} />
+              <EmptyTable headers={["Reservation ID", "Event", "User", "Seats", "Total", "Status", "Actions"]} />
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['Reservation ID','Event','Seats','Total','Status','Actions'].map((h) => (
+                      {['Reservation ID','Event','User','Seats','Total','Status','Actions'].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
@@ -99,8 +115,9 @@ export default function AdminDashboard() {
                     {reservations.map((r) => (
                       <tr key={r.id}>
                         <td style={{ padding: '8px 6px' }}>{r.id}</td>
-                        <td style={{ padding: '8px 6px' }}>{r.event?.name}</td>
-                        <td style={{ padding: '8px 6px' }}>{(r.seats || []).join(', ')}</td>
+                        <td style={{ padding: '8px 6px' }}>{r.event_name}</td>
+                        <td style={{ padding: '8px 6px' }}>{r.user_email || '-'}</td>
+                        <td style={{ padding: '8px 6px' }}>{parseSeats(r.seats_json).join(', ')}</td>
                         <td style={{ padding: '8px 6px' }}>${r.total}</td>
                         <td style={{ padding: '8px 6px' }}>{r.status}</td>
                         <td style={{ padding: '8px 6px', display: 'flex', gap: 8 }}>
@@ -120,13 +137,13 @@ export default function AdminDashboard() {
           <section>
             <h3 style={{ marginTop: 0 }}>Payments</h3>
             {payments.length === 0 ? (
-              <EmptyTable headers={["Payment ID", "Provider", "Amount", "Status", "Created At"]} />
+              <EmptyTable headers={["Payment ID", "Provider", "Amount", "Status", "Payer", "Created At"]} />
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['Payment ID','Provider','Amount','Status','Created At'].map((h) => (
+                      {['Payment ID','Provider','Amount','Status','Payer','Created At'].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
@@ -138,6 +155,7 @@ export default function AdminDashboard() {
                         <td style={{ padding: '8px 6px' }}>{p.provider}</td>
                         <td style={{ padding: '8px 6px' }}>${p.amount}</td>
                         <td style={{ padding: '8px 6px' }}>{p.status}</td>
+                        <td style={{ padding: '8px 6px' }}>{getPayerEmail(p)}</td>
                         <td style={{ padding: '8px 6px' }}>{new Date(p.created_at).toLocaleString()}</td>
                       </tr>
                     ))}
