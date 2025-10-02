@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import fetch from 'node-fetch';
 
 const router = Router();
 
@@ -45,8 +46,77 @@ router.post('/', async (req, res, next) => {
 router.patch('/:id', async (req, res, next) => {
   try {
     const { status } = req.body;
-    await query('UPDATE reservations SET status=? WHERE id=?', [status, req.params.id]);
+    const id = req.params.id;
+
+    // Load previous state to detect transitions
+    const rows = await query('SELECT id, status, event_id, event_name, user_email, seats_json, total FROM reservations WHERE id=?', [id]);
+    const prev = rows && rows[0] ? rows[0] : null;
+
+    await query('UPDATE reservations SET status=? WHERE id=?', [status, id]);
     res.json({ ok: true });
+
+    // Fire-and-forget Discord notification when transitioning to approved or rejected
+    const curStatus = String(status || '').toLowerCase();
+    const prevStatus = String(prev?.status || '').toLowerCase();
+    const nowApproved = curStatus === 'approved';
+    const wasApproved = prevStatus === 'approved';
+    const nowRejected = curStatus === 'rejected';
+    const wasRejected = prevStatus === 'rejected';
+    const discordWebhook = process.env.DISCORD_WEBHOOK_URL;
+
+    const shouldNotify = discordWebhook && ((nowApproved && !wasApproved) || (nowRejected && !wasRejected));
+
+    if (shouldNotify) {
+      (async () => {
+        // Parse seats
+        let seats = prev?.seats_json;
+        if (typeof seats === 'string') {
+          try { seats = JSON.parse(seats); } catch {_ => (seats = []);} // fallback
+        }
+        const seatList = Array.isArray(seats) ? seats.join(', ') : '';
+        const total = prev?.total != null ? String(prev.total) : '';
+        const eventName = prev?.event_name || 'Unknown Event';
+        const userEmail = prev?.user_email || 'unknown';
+
+        const isApproved = nowApproved && !wasApproved;
+        const isRejected = nowRejected && !wasRejected;
+        const content = isApproved
+          ? `✅ Reservation approved (#${id})`
+          : `❌ Reservation rejected (#${id})`;
+        const title = isApproved ? 'Reservation Approved' : 'Reservation Rejected';
+        const color = isApproved ? 0x22c55e /* green-500 */ : 0xef4444 /* red-500 */;
+        const embeds = [
+          {
+            title,
+            description: eventName,
+            color,
+            author: { name: 'Concertify', icon_url: 'https://concertify.up.railway.app/public/logo.png' },
+            thumbnail: { url: 'https://concertify.up.railway.app/public/logo.png' },
+            fields: [
+              ...(userEmail ? [{ name: 'User', value: userEmail, inline: true }] : []),
+              ...(total ? [{ name: 'Total', value: total, inline: true }] : []),
+              ...(seatList ? [{ name: 'Seats', value: seatList, inline: false }] : [])
+            ],
+            footer: { text: `Reservation #${id} • Concertify` },
+            timestamp: new Date().toISOString()
+          }
+        ];
+        try {
+          const resp = await fetch(discordWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, embeds })
+          });
+          if (!resp.ok && resp.status !== 204) {
+            // eslint-disable-next-line no-console
+            console.error('[reservations] discord_failed', resp.status, await resp.text());
+          }
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[reservations] discord_error', e?.message);
+        }
+      })().catch(() => {});
+    }
   } catch (e) {
     next(e);
   }
