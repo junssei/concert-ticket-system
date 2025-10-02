@@ -18,31 +18,29 @@ export default function Home() {
   const heroRef = useRef(null);
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
-
-  const fetchEvents = async (p = 0) => {
-  const API_KEY = "jKhPvHMAsgPdNaNUGQ1iNTjXLjfGtyQj";
-  const q = query ? `&keyword=${encodeURIComponent(query)}` : '';
-  const url = `https://app.ticketmaster.com/discovery/v2/events?apikey=${API_KEY}&keyword=concert&locale=en-us&startDateTime=2025-10-01T02:32:00Z&endDateTime=2025-12-31T11:59:00Z&classificationName=concert&preferredCountry=us&page=${p}&size=${size}${q}`;
+  const fetchEvents = React.useCallback(async (p = 0) => {
+    const API_KEY = "jKhPvHMAsgPdNaNUGQ1iNTjXLjfGtyQj";
+    const q = query ? `&keyword=${encodeURIComponent(query)}` : '';
+    const url = `https://app.ticketmaster.com/discovery/v2/events?apikey=${API_KEY}&keyword=concert&locale=en-us&startDateTime=2025-10-01T02:32:00Z&endDateTime=2025-12-31T11:59:00Z&classificationName=concert&preferredCountry=us&page=${p}&size=${size}${q}`;
     try {
-    setLoading(true);
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Events not found');
-    const data = await response.json();
-    // Ticketmaster wraps events under _embedded.events
-    const items = data?._embedded?.events || [];
-    const pageInfo = data?.page || {};
-    setEvents(items);
-    setPage(pageInfo.number ?? p);
-    setTotalPages(pageInfo.totalPages ?? 0);
-    setLoading(false);
+      setLoading(true);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Events not found');
+      const data = await response.json();
+      // Ticketmaster wraps events under _embedded.events
+      const items = data?._embedded?.events || [];
+      const pageInfo = data?.page || {};
+      setEvents(items);
+      setPage(pageInfo.number ?? p);
+      setTotalPages(pageInfo.totalPages ?? 0);
+      setLoading(false);
     } catch (err) {
-    console.error(err);
-    setEvents([]);
-    setLoading(false);
+      setEvents([]);
+      setLoading(false);
     }
-  }
+  }, [query, size]);
 
-  const fetchUpcoming = async () => {
+  const fetchUpcoming = React.useCallback(async () => {
     const API_KEY = "jKhPvHMAsgPdNaNUGQ1iNTjXLjfGtyQj";
     const url = `https://app.ticketmaster.com/discovery/v2/events?apikey=${API_KEY}&keyword=concert&locale=*&startDateTime=2025-10-01T02:32:00Z&page=0&classificationName=concert`;
     try {
@@ -52,21 +50,21 @@ export default function Home() {
       const items = data?._embedded?.events || [];
       setUpcoming(items);
     } catch (err) {
-      console.error(err);
       setUpcoming([]);
     }
-  }
+  }, []);
 
-  function onSubmit(e) {
+
+  const onSubmit = (e) => {
     e.preventDefault();
     fetchEvents(0);
-  }
+  };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   React.useEffect(() => {
     fetchEvents(0);
     fetchUpcoming();
-  }, []);
+  }, [fetchEvents, fetchUpcoming]);
 
   function gotoPage(p) {
     if (p < 0 || (totalPages && p >= totalPages)) return;
