@@ -6,8 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js",
-    "postinstall": "cd .. && npm install --no-audit --no-fund && npm run build"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
