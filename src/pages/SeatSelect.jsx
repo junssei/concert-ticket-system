@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { TICKETMASTER_API_KEY } from '../config';
+import { TICKETMASTER_API_KEY, API_BASE_URL } from '../config';
 
 function generateSeats(rows = 10, cols = 14, seed = 1) {
   // Simple PRNG to keep seat availability stable per event
@@ -26,8 +26,41 @@ export default function SeatSelect() {
   const [loading, setLoading] = useState(!location.state?.event);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState([]);
+  const [reservedSet, setReservedSet] = useState(() => new Set());
 
   const seats = useMemo(() => generateSeats(10, 14, Number(String(id).replace(/\D/g, '')) || 1), [id]);
+
+  // Fetch approved reservations for this event and build a set of reserved seat IDs
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReserved() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/reservations`);
+        if (!res.ok) throw new Error('Failed to load reservations');
+        const rows = await res.json();
+        const mine = (Array.isArray(rows) ? rows : [])
+          .filter(r => String(r.event_id || '') === String(id) && String(r.status || '').toLowerCase() === 'approved');
+        const set = new Set();
+        for (const r of mine) {
+          let seatsVal = r.seats_json;
+          if (typeof seatsVal === 'string') {
+            try { seatsVal = JSON.parse(seatsVal); } catch { seatsVal = []; }
+          }
+          if (Array.isArray(seatsVal)) {
+            for (const s of seatsVal) set.add(String(s));
+          }
+        }
+        if (!cancelled) setReservedSet(set);
+      } catch (e) {
+        if (!cancelled) {
+          // Non-fatal: keep going with no reserved set
+          setReservedSet(new Set());
+        }
+      }
+    }
+    loadReserved();
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     if (event) return;
@@ -54,7 +87,7 @@ export default function SeatSelect() {
   const total = (selected.length * pricePerSeat).toFixed(2);
 
   function toggleSeat(s) {
-    if (s.unavailable) return;
+    if (s.unavailable || reservedSet.has(s.id)) return;
     setSelected((cur) => {
       const exists = cur.find((x) => x.id === s.id);
       if (exists) return cur.filter((x) => x.id !== s.id);
@@ -103,8 +136,10 @@ export default function SeatSelect() {
             </div>
             <div className='seatGrid' role='grid' aria-label='Seat map'>
               {seats.map((s) => {
+                const isReserved = reservedSet.has(s.id);
                 const isSelected = selected.find((x) => x.id === s.id);
-                const cls = s.unavailable ? 'unavailable' : (isSelected ? 'selected' : 'available');
+                const unavailable = s.unavailable || isReserved;
+                const cls = unavailable ? 'unavailable' : (isSelected ? 'selected' : 'available');
                 return (
                   <button
                     type='button'
@@ -112,7 +147,7 @@ export default function SeatSelect() {
                     className={`seat ${cls}`}
                     onClick={() => toggleSeat(s)}
                     aria-label={`Seat ${s.id} ${cls}`}
-                    disabled={s.unavailable}
+                    disabled={unavailable}
                     title={s.id}
                   >
                     {s.id}
