@@ -85,13 +85,15 @@ router.patch('/:id', async (req, res, next) => {
           : `❌ Reservation rejected (#${id})`;
         const title = isApproved ? 'Reservation Approved' : 'Reservation Rejected';
         const color = isApproved ? 0x22c55e /* green-500 */ : 0xef4444 /* red-500 */;
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const logoUrl = process.env.DISCORD_LOGO_URL || `${baseUrl}/public/logo.png`;
         const embeds = [
           {
             title,
             description: eventName,
             color,
-            author: { name: 'Concertify', icon_url: 'https://concertify.up.railway.app/public/logo.png' },
-            thumbnail: { url: 'https://concertify.up.railway.app/public/logo.png' },
+            author: { name: 'Concertify', icon_url: logoUrl },
+            thumbnail: { url: logoUrl },
             fields: [
               ...(userEmail ? [{ name: 'User', value: userEmail, inline: true }] : []),
               ...(total ? [{ name: 'Total', value: total, inline: true }] : []),
