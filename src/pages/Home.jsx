@@ -176,7 +176,7 @@ export default function Home() {
                   <span className={`badge ${statusClass}`}>{statusText}</span>
                   <div className='heroActions'>
                     <button className='btn primary' onClick={() => viewEvent(ev)} aria-label={`View ${name}`}>View</button>
-                    <button className='btn' onClick={() => startReservation(ev)} aria-label={`Reserve ${name}`}>Reserve</button>
+                    <button className='btn' onClick={() => startReservation(ev)} aria-label={`Reserve ${name}`} disabled={status !== 'onsale'}>Reserve</button>
                   </div>
                 </div>
               </div>
