@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getPool } from './db.js';
 import reservationsRouter from './routes/reservations.js';
 import paymentsRouter from './routes/payments.js';
@@ -87,11 +89,22 @@ app.post('/api/paypal/webhook', express.raw({ type: 'application/json' }), (req,
         const amount = event?.resource?.amount?.value || event?.resource?.seller_receivable_breakdown?.gross_amount?.value || '';
         const currency = event?.resource?.amount?.currency_code || event?.resource?.seller_receivable_breakdown?.gross_amount?.currency_code || '';
         const payer = event?.resource?.payer?.email_address || event?.resource?.payer?.payer_info?.email || 'unknown';
-        const content = `PayPal event: ${event?.event_type || 'UNKNOWN'}`;
+        const eventType = event?.event_type || 'UNKNOWN';
+        const content = `PayPal event: ${eventType}`;
+        const summary = event?.summary || '';
+        const color = eventType === 'PAYMENT.CAPTURE.COMPLETED'
+          ? 0x22c55e /* green */
+          : (eventType.includes('DENIED') || eventType.includes('REFUND') || eventType.includes('REVERSED'))
+            ? 0xef4444 /* red */
+            : 0x3b82f6 /* blue */;
+        const logoUrl = process.env.DISCORD_LOGO_URL || 'https://concertify.up.railway.app/public/logo.png';
         const embeds = [
           {
-            title: event?.event_type || 'PayPal Webhook',
-            description: event?.summary || '',
+            title: eventType,
+            description: summary,
+            color,
+            author: { name: 'Concertify', icon_url: logoUrl },
+            thumbnail: { url: logoUrl },
             fields: [
               ...(amount ? [{ name: 'Amount', value: `${amount} ${currency}`, inline: true }] : []),
               ...(payer ? [{ name: 'Payer', value: String(payer), inline: true }] : []),
@@ -119,6 +132,12 @@ app.post('/api/paypal/webhook', express.raw({ type: 'application/json' }), (req,
 });
 
 app.use(express.json());
+
+// Serve static assets from repo root /public for embeds (e.g., /public/logo.png)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.resolve(__dirname, '../../public');
+app.use('/public', express.static(publicDir, { maxAge: '1y', immutable: true }));
 
 app.get('/healthz', async (_req, res) => {
   let db = 'disabled';
