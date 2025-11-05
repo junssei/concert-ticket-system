@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import fetch from 'node-fetch';
+import { sendReservationApproval } from '../services/notifications.js';
 
 const router = Router();
 
@@ -65,6 +66,50 @@ router.patch('/:id', async (req, res, next) => {
     const discordWebhook = process.env.DISCORD_WEBHOOK_URL;
 
     const shouldNotify = discordWebhook && ((nowApproved && !wasApproved) || (nowRejected && !wasRejected));
+
+    // Send NotificationAPI notification when reservation is approved
+    if (nowApproved && !wasApproved && prev) {
+      (async () => {
+        try {
+          // Parse seats
+          let seats = prev?.seats_json;
+          if (typeof seats === 'string') {
+            try { seats = JSON.parse(seats); } catch { seats = []; }
+          }
+
+          // Try to get user phone from payment data if available
+          let userPhone = null;
+          if (prev?.payment_id) {
+            try {
+              const paymentRows = await query(
+                'SELECT raw_json FROM payments WHERE external_id = ? LIMIT 1',
+                [prev.payment_id]
+              );
+              if (paymentRows && paymentRows[0] && paymentRows[0].raw_json) {
+                const rawJson = typeof paymentRows[0].raw_json === 'string' 
+                  ? JSON.parse(paymentRows[0].raw_json) 
+                  : paymentRows[0].raw_json;
+                userPhone = rawJson?.payer?.phone?.phone_number?.national_number || null;
+              }
+            } catch (_) {
+              // Ignore errors when looking up payment
+            }
+          }
+
+          await sendReservationApproval({
+            userEmail: prev.user_email,
+            userPhone,
+            eventName: prev.event_name,
+            reservationId: id,
+            seats,
+            total: prev.total,
+            currency: 'USD', // Could be retrieved from payment if needed
+          });
+        } catch (error) {
+          console.error('[reservations] notification_error', error?.message);
+        }
+      })().catch(() => {});
+    }
 
     if (shouldNotify) {
       (async () => {
